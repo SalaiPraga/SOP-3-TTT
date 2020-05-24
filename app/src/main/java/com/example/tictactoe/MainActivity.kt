@@ -28,8 +28,9 @@ const val ANONYMOUS = "anonymous"
         mUsername = ANONYMOUS
 
         fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
+            if(MyDrawView.boxElementsList.size!=0){
+                MyDrawView.boxElementsList.removeAt(MyDrawView.boxElementsList.size-1)
+            }
         }
 
 
@@ -72,6 +73,10 @@ const val ANONYMOUS = "anonymous"
         return when (item.itemId) {
             R.id.logout -> {
                 AuthUI.getInstance().signOut(this)
+                return true
+            }
+            R.id.reset -> {
+                MyDrawView.boxElementsList.clear()
                 return true
             }
 
