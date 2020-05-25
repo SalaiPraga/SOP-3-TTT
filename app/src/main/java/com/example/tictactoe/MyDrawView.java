@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -44,7 +45,6 @@ public class MyDrawView extends View {
     }
 
     private void init(@Nullable AttributeSet set) {
-
 
 
         marginPaint = new Paint();
@@ -87,6 +87,10 @@ public class MyDrawView extends View {
             }
 
         }
+
+        if(boxElementsList.size()==9){
+            announceWinner(-1);
+        }
     }
 
     private void drawMargins(Canvas canvas) {
@@ -128,13 +132,13 @@ public class MyDrawView extends View {
             a = checkifPresentinList(x, (y+gap)%(3*gap), firstPlayerTurn);
             b = checkifPresentinList(x, (y+(2*gap))%(3*gap), firstPlayerTurn);
             if(a&&b){
-                announceWinner(firstPlayerTurn);
+                announceWinner(firstPlayerTurn?1:0);
                 return;
             }
             a = checkifPresentinList((x+gap)%(3*gap), y, firstPlayerTurn);
             b = checkifPresentinList((x+(2*gap))%(3*gap), y, firstPlayerTurn);
             if(a&&b){
-                announceWinner(firstPlayerTurn);
+                announceWinner(firstPlayerTurn?1:0);
                 return;
             }
 
@@ -142,14 +146,14 @@ public class MyDrawView extends View {
                 a = checkifPresentinList((x + gap) % (3 * gap), (y+gap)%(3*gap), firstPlayerTurn);
                 b = checkifPresentinList((x + (2 * gap)) % (3 * gap), (y+(2*gap))%(3*gap), firstPlayerTurn);
                 if (a && b) {
-                    announceWinner(firstPlayerTurn);
+                    announceWinner(firstPlayerTurn?1:0);
                     return;
                 }
             }else{
                 a = checkifPresentinList((x + (2*gap)) % (3 * gap), (y+gap)%(3*gap), firstPlayerTurn);
                 b = checkifPresentinList((x + (1*gap)) % (3 * gap), (y+(2*gap))%(3*gap), firstPlayerTurn);
                 if (a && b) {
-                    announceWinner(firstPlayerTurn);
+                    announceWinner(firstPlayerTurn?1:0);
                     return;
                 }
             }
@@ -162,25 +166,25 @@ public class MyDrawView extends View {
             a = checkifPresentinList(x, (y+gap)%(3*gap), firstPlayerTurn);
             b = checkifPresentinList(x, (y+(2*gap))%(3*gap), firstPlayerTurn);
             if(a&&b){
-                announceWinner(firstPlayerTurn);
+                announceWinner(firstPlayerTurn?1:0);
                 return;
             }
             a = checkifPresentinList((x+gap)%(3*gap), y, firstPlayerTurn);
             b = checkifPresentinList((x+(2*gap))%(3*gap), y, firstPlayerTurn);
             if(a&&b){
-                announceWinner(firstPlayerTurn);
+                announceWinner(firstPlayerTurn?1:0);
                 return;
             }
             a = checkifPresentinList((x + gap) % (3 * gap), (y+gap)%(3*gap), firstPlayerTurn);
             b = checkifPresentinList((x + (2 * gap)) % (3 * gap), (y+(2*gap))%(3*gap), firstPlayerTurn);
             if (a && b) {
-                announceWinner(firstPlayerTurn);
+                announceWinner(firstPlayerTurn?1:0);
                 return;
             }
             a = checkifPresentinList((x + (2*gap)) % (3 * gap), (y+gap)%(3*gap), firstPlayerTurn);
             b = checkifPresentinList((x + (1*gap)) % (3 * gap), (y+(2*gap))%(3*gap), firstPlayerTurn);
             if (a && b) {
-                announceWinner(firstPlayerTurn);
+                announceWinner(firstPlayerTurn?1:0);
                 return;
             }
         }
@@ -190,27 +194,34 @@ public class MyDrawView extends View {
             a = checkifPresentinList(x, (y+gap)%(3*gap), firstPlayerTurn);
             b = checkifPresentinList(x, (y+(2*gap))%(3*gap), firstPlayerTurn);
             if(a&&b){
-                announceWinner(firstPlayerTurn);
+                announceWinner(firstPlayerTurn?1:0);
                 return;
             }
             a = checkifPresentinList((x+gap)%(3*gap), y, firstPlayerTurn);
             b = checkifPresentinList((x+(2*gap))%(3*gap), y, firstPlayerTurn);
             if(a&&b){
-                announceWinner(firstPlayerTurn);
+                announceWinner(firstPlayerTurn?1:0);
                 return;
             }
         }
     }
 
-    private void announceWinner(boolean firstPlayerTurn) {
+    private void announceWinner(int q) {
         boxElementsList.clear();
         String msg;
-        if(firstPlayerTurn){
-            msg = "X";
-        }else{
-            msg = "O";
+        if(q==1){
+            TextView txtView = (TextView) ((MainActivity)getContext()).findViewById(R.id.playerA);
+            msg = txtView.getText().toString();
+        }else if(q==0){
+            TextView txtView = (TextView) ((MainActivity)getContext()).findViewById(R.id.playerB);
+            msg = txtView.getText().toString();
+        }
+        else{
+            Toast.makeText(getContext(), "Match Draw", Toast.LENGTH_SHORT).show();
+            return;
         }
         Toast.makeText(getContext(), msg+" Wins!", Toast.LENGTH_SHORT).show();
+        swapNames();
     }
 
 
@@ -235,4 +246,19 @@ public class MyDrawView extends View {
 
         return true;
     }
+
+    private void swapNames(){
+
+        String nameX, nameO;
+
+        TextView txtView = (TextView) ((MainActivity)getContext()).findViewById(R.id.playerB);
+        nameX = txtView.getText().toString();
+        txtView = (TextView) ((MainActivity)getContext()).findViewById(R.id.playerA);
+        nameO = txtView.getText().toString();
+        txtView.setText(nameX);
+        txtView = (TextView) ((MainActivity)getContext()).findViewById(R.id.playerB);
+        txtView.setText(nameO);
+
+    }
+
 }

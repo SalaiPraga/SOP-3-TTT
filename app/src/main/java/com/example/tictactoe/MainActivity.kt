@@ -9,15 +9,19 @@ import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
 
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.content_main.*
 
 const val RC_SIGN_IN = 1
 const val ANONYMOUS = "anonymous"
 
-     class MainActivity : AppCompatActivity() {
+     class MainActivity : AppCompatActivity(), PlayerNameDialog.mDialogListener {
 
-    private lateinit var mFirebaseAuth : FirebaseAuth
-    private lateinit var mAuthStateListener : FirebaseAuth.AuthStateListener
-    lateinit var mUsername : String
+         private lateinit var mFirebaseAuth : FirebaseAuth
+         private lateinit var mAuthStateListener : FirebaseAuth.AuthStateListener
+         lateinit var mUsername : String
+
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +30,8 @@ const val ANONYMOUS = "anonymous"
 
         mFirebaseAuth = FirebaseAuth.getInstance()
         mUsername = ANONYMOUS
+
+        openDialog()
 
         fab.setOnClickListener { view ->
             if(MyDrawView.boxElementsList.size!=0){
@@ -60,11 +66,34 @@ const val ANONYMOUS = "anonymous"
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+
+
+
+
+         override fun applytexts(nameA: String?, nameB: String?) {
+             if(nameA!=null) {
+                 playerA.text = nameA
+             }
+             if(nameB!=null) {
+                 playerB.text = nameB
+             }
+         }
+
+
+         private fun openDialog() {
+
+             var playerNameDialog = PlayerNameDialog()
+             playerNameDialog.show(supportFragmentManager, "Player Names")
+
+         }
+
+
+         override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
+
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         // Handle action bar item clicks here. The action bar will
@@ -84,6 +113,7 @@ const val ANONYMOUS = "anonymous"
         }
     }
 
+
     private fun onSignedInInitialize(displayName: String?) {
         if (displayName != null) {
             mUsername = displayName
@@ -95,13 +125,16 @@ const val ANONYMOUS = "anonymous"
         mUsername = ANONYMOUS
     }
 
+
      override fun onResume() {
          super.onResume()
          mFirebaseAuth.addAuthStateListener(mAuthStateListener)
      }
 
+
      override fun onPause() {
          super.onPause()
          mFirebaseAuth.removeAuthStateListener(mAuthStateListener)
      }
+
 }
