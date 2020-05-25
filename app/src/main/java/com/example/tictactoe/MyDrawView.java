@@ -4,6 +4,9 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.media.MediaPlayer;
+import android.os.CountDownTimer;
+import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -13,7 +16,9 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.Random;
 
+import static java.lang.Math.random;
 import static java.lang.Math.round;
 
 public class MyDrawView extends View {
@@ -23,6 +28,29 @@ public class MyDrawView extends View {
     float canvasSize;
     Paint marginPaint ;
     public static ArrayList<BoxElement> boxElementsList = new ArrayList<BoxElement>() ;
+    public static ArrayList<BoxElement> availableOptions = new ArrayList<BoxElement>() ;
+    public static boolean singlePlayerMode = true;
+    boolean computerFirstTurn = false;
+    MediaPlayer clickSound = MediaPlayer.create(getContext(), R.raw.burst);
+    CountDownTimer clearScreenTimer = new CountDownTimer(1000, 500) {
+        @Override
+        public void onTick(long millisUntilFinished) {
+            //do nothing
+        }
+
+        @Override
+        public void onFinish() {
+            boxElementsList.clear();
+            if (singlePlayerMode) {
+                computerFirstTurn = !computerFirstTurn;
+                if(computerFirstTurn){
+                    initializeAvailableOptions();
+                    makeComputerMove(true);
+                }
+            }
+            swapNames();
+        }
+    };
 
     public MyDrawView(Context context) {
         super(context);
@@ -52,6 +80,7 @@ public class MyDrawView extends View {
         marginPaint.isAntiAlias();
         marginPaint.setStyle(Paint.Style.STROKE);
         marginPaint.setStrokeWidth(30);
+
 
     }
 
@@ -107,6 +136,9 @@ public class MyDrawView extends View {
 
         if(event.getAction()==MotionEvent.ACTION_DOWN){
             //check if present already in the list
+            if((boxElementsList.size()==0)&&(singlePlayerMode)){
+                initializeAvailableOptions();
+            }
             float x = ((event.getX()) - (event.getX()%gap) + (gap/2));
             float y = ((event.getY()) - (event.getY()%gap) + (gap/2));
             if(notPresentInList(x, y)) {
@@ -115,13 +147,24 @@ public class MyDrawView extends View {
                 }else{
                     boxElementsList.add(new BoxElement(x, y, true));
                 }
+                removeFromAvailableOptions(x, y);
+                clickSound.start();
                 checkIfGameOver(x, y, (boxElementsList.get(boxElementsList.size() - 1).isFirstPlayerTurn()));
+                if((boxElementsList.size()!=0)&&(singlePlayerMode)){
+                    if(!(computerFirstTurn&&(boxElementsList.size()==1))) {
+                        makeComputerMove(!(boxElementsList.get(boxElementsList.size() - 1).isFirstPlayerTurn()));
+                        checkIfGameOver((boxElementsList.get(boxElementsList.size() - 1).getX()),
+                                (boxElementsList.get(boxElementsList.size() - 1).getY()),
+                                (boxElementsList.get(boxElementsList.size() - 1).isFirstPlayerTurn()));
+                    }
+                }
             }
 
         }
 
         return value;
     }
+
 
     private void checkIfGameOver(float x, float y, boolean firstPlayerTurn) {
         boolean a, b;
@@ -207,7 +250,7 @@ public class MyDrawView extends View {
     }
 
     private void announceWinner(int q) {
-        boxElementsList.clear();
+
         String msg;
         if(q==1){
             TextView txtView = (TextView) ((MainActivity)getContext()).findViewById(R.id.playerA);
@@ -221,7 +264,7 @@ public class MyDrawView extends View {
             return;
         }
         Toast.makeText(getContext(), msg+" Wins!", Toast.LENGTH_SHORT).show();
-        swapNames();
+        clearScreenTimer.start();
     }
 
 
@@ -261,4 +304,31 @@ public class MyDrawView extends View {
 
     }
 
+
+// SPM
+
+    private void initializeAvailableOptions() {
+        availableOptions.clear();
+        for(int i=0; i<3; i++){
+            for(int j=0; j<3; j++){
+                availableOptions.add(new BoxElement(((i*gap)+(gap/2)), ((j*gap)+(gap/2)), true));
+            }
+        }
+    }
+
+
+    private void makeComputerMove(boolean turn) {
+        Random random = new Random();
+        int index = random.nextInt(availableOptions.size());
+        boxElementsList.add(new BoxElement(availableOptions.get(index).getX(), availableOptions.get(index).getY(), turn));
+        availableOptions.remove(index);
+    }
+
+    private void removeFromAvailableOptions(float x, float y) {
+        for(int i=0; i < availableOptions.size() ; i++){
+            if( (x==availableOptions.get(i).getX()) && (y==availableOptions.get(i).getY()) ){
+                availableOptions.remove(i);
+            }
+        }
+    }
 }
