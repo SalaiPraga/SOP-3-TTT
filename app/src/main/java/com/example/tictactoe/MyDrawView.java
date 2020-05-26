@@ -2,11 +2,9 @@ package com.example.tictactoe;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.media.MediaPlayer;
 import android.os.CountDownTimer;
-import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,7 +16,6 @@ import androidx.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Random;
 
-import static java.lang.Math.random;
 import static java.lang.Math.round;
 
 public class MyDrawView extends View {
@@ -32,6 +29,7 @@ public class MyDrawView extends View {
     public static boolean singlePlayerMode = true;
     boolean computerFirstTurn = false;
     MediaPlayer clickSound = MediaPlayer.create(getContext(), R.raw.burst);
+    boolean clearScreenTimerRunning = false;
     CountDownTimer clearScreenTimer = new CountDownTimer(1000, 500) {
         @Override
         public void onTick(long millisUntilFinished) {
@@ -49,6 +47,7 @@ public class MyDrawView extends View {
                 }
             }
             swapNames();
+            clearScreenTimerRunning = false;
         }
     };
 
@@ -98,7 +97,7 @@ public class MyDrawView extends View {
 
     private void drawAllElements(Canvas canvas) {
         boolean firstPlayerTurn = true;
-        float z = 40;//make this responsive
+        float z = 40;// TODO: make this responsive
         for(int i = 0; i<boxElementsList.size(); i++){
 
             if(firstPlayerTurn){
@@ -116,10 +115,12 @@ public class MyDrawView extends View {
             }
 
         }
-
-        if(boxElementsList.size()==9){
-            announceWinner(-1);
+        TextView txtView = (TextView) ((MainActivity)getContext()).findViewById(R.id.playerA);
+        if((txtView.getText().toString()=="Computer")&&(boxElementsList.size()==0)){ // to avoid the reset bug
+            initializeAvailableOptions();
+            makeComputerMove(true);
         }
+
     }
 
     private void drawMargins(Canvas canvas) {
@@ -141,7 +142,7 @@ public class MyDrawView extends View {
             }
             float x = ((event.getX()) - (event.getX()%gap) + (gap/2));
             float y = ((event.getY()) - (event.getY()%gap) + (gap/2));
-            if(notPresentInList(x, y)) {
+            if(notPresentInList(x, y)&&(!clearScreenTimerRunning)) {
                 if(boxElementsList.size()!=0) {
                     boxElementsList.add(new BoxElement(x, y, !(boxElementsList.get(boxElementsList.size() - 1).isFirstPlayerTurn())));
                 }else{
@@ -150,7 +151,7 @@ public class MyDrawView extends View {
                 removeFromAvailableOptions(x, y);
                 clickSound.start();
                 checkIfGameOver(x, y, (boxElementsList.get(boxElementsList.size() - 1).isFirstPlayerTurn()));
-                if((boxElementsList.size()!=0)&&(singlePlayerMode)){
+                if((boxElementsList.size()!=0)&&(singlePlayerMode)&&(!clearScreenTimerRunning)){
                     if(!(computerFirstTurn&&(boxElementsList.size()==1))) {
                         makeComputerMove(!(boxElementsList.get(boxElementsList.size() - 1).isFirstPlayerTurn()));
                         checkIfGameOver((boxElementsList.get(boxElementsList.size() - 1).getX()),
@@ -247,6 +248,10 @@ public class MyDrawView extends View {
                 return;
             }
         }
+
+        if(boxElementsList.size()==9){
+            announceWinner(-1);
+        }
     }
 
     private void announceWinner(int q) {
@@ -261,10 +266,13 @@ public class MyDrawView extends View {
         }
         else{
             Toast.makeText(getContext(), "Match Draw", Toast.LENGTH_SHORT).show();
+            clearScreenTimer.start();
+            clearScreenTimerRunning = true;
             return;
         }
         Toast.makeText(getContext(), msg+" Wins!", Toast.LENGTH_SHORT).show();
         clearScreenTimer.start();
+        clearScreenTimerRunning = true;
     }
 
 
@@ -277,6 +285,17 @@ public class MyDrawView extends View {
         }
 
         return false;
+    }
+
+    private int indexFromAvailableOptions(float x, float y, int index){
+        for(int i=0; i < availableOptions.size() ; i++){
+            if((x==availableOptions.get(i).getX())&&(y==availableOptions.get(i).getY())){
+                index = i;
+                return index;
+            }
+        }
+
+        return index;
     }
 
     private boolean notPresentInList(float x, float y) {
@@ -318,10 +337,254 @@ public class MyDrawView extends View {
 
 
     private void makeComputerMove(boolean turn) {
-        Random random = new Random();
-        int index = random.nextInt(availableOptions.size());
-        boxElementsList.add(new BoxElement(availableOptions.get(index).getX(), availableOptions.get(index).getY(), turn));
-        availableOptions.remove(index);
+        int index = 0;
+        index = ComputerCanScore(index);
+        if(index!=-1){
+        }
+        else{
+            index = opponentCanScore(index);
+            if(index!=-1){
+            }
+            else {
+                //strategy
+                if(availableOptions.size()!=0) {
+                    index = computerStrategy(index);
+                    if (index == -1) {
+                        Random random = new Random();
+                        index = random.nextInt(availableOptions.size());
+                    }
+                }
+            }
+        }
+        if (availableOptions.size()!=0) {
+            boxElementsList.add(new BoxElement(availableOptions.get(index).getX(), availableOptions.get(index).getY(), turn));
+            availableOptions.remove(index);
+        }
+    }
+
+    private int computerStrategy(int index) {
+        if(boxElementsList.size()==0){
+            Random random = new Random();
+            int corner = random.nextInt(4);
+            switch (corner){
+                case 0: return 0;
+                case 1: return 2;
+                case 2: return 6;
+                case 3: return 8;
+            }
+        }
+        return -1;
+    }
+
+    private int opponentCanScore(int index) {
+        if(boxElementsList.size()>2){
+            if((boxElementsList.get(boxElementsList.size()-1).firstPlayerTurn)){
+                index = possibilityOfWinningPresent(index, boxElementsList.get(boxElementsList.size()-1).firstPlayerTurn);
+                if(index!=-1){
+                    return index;
+                }
+            }
+        }
+        if(boxElementsList.size()>3){
+            if((!boxElementsList.get(boxElementsList.size()-1).firstPlayerTurn)){
+                index = possibilityOfWinningPresent(index, boxElementsList.get(boxElementsList.size()-1).firstPlayerTurn);
+                if(index!=-1){
+                    return index;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int possibilityOfWinningPresent(int index, boolean playerTurn) {
+        //check for possibility of scoring and update the index to match that from possible options
+        for(int i = (boxElementsList.get(0).firstPlayerTurn==playerTurn)?0:1 ; i<boxElementsList.size() ; i+=2){
+            for(int j = i+2 ; j<boxElementsList.size() ; j+=2){
+                BoxElement a = boxElementsList.get(i);
+                BoxElement b = boxElementsList.get(j);
+
+                if(a.getX()==b.getX()){ // vertical line
+
+                    if(a.getY()<b.getY()){//a above b
+                        if((b.getY()-a.getY())==gap){
+                            boolean c = checkifPresentinList(b.getX(), (b.getY()+gap)%(3*gap), true);
+                            boolean d = checkifPresentinList(b.getX(), (b.getY()+gap)%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions(b.getX(), (b.getY()+gap)%(3*gap), index);
+                                return index;
+                            }
+                        }
+                        if((b.getY()-a.getY())==(2*gap)){
+                            boolean c = checkifPresentinList(b.getX(), (b.getY()+(2*gap))%(3*gap), true);
+                            boolean d = checkifPresentinList(b.getX(), (b.getY()+(2*gap))%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions(b.getX(), (b.getY()+(2*gap))%(3*gap), index);
+                                return index;
+                            }
+                        }
+                    }
+                    else if(a.getY()>b.getY()){//a below b
+                        if((a.getY()-b.getY())==gap){
+                            boolean c = checkifPresentinList(a.getX(), (a.getY()+gap)%(3*gap), true);
+                            boolean d = checkifPresentinList(a.getX(), (a.getY()+gap)%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions(a.getX(), (a.getY()+gap)%(3*gap), index);
+                                return index;
+                            }
+                        }
+                        if((a.getY()-b.getY())==(2*gap)){
+                            boolean c = checkifPresentinList(a.getX(), (a.getY()+(2*gap))%(3*gap), true);
+                            boolean d = checkifPresentinList(a.getX(), (a.getY()+(2*gap))%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions(a.getX(), (a.getY()+(2*gap))%(3*gap), index);
+                                return index;
+                            }
+                        }
+                    }
+                }
+
+                else if(a.getY()==b.getY()){ // horizontal line
+
+                    if(a.getX()<b.getX()){//a left of b
+                        if((b.getX()-a.getX())==gap){
+                            boolean c = checkifPresentinList((b.getX()+gap)%(3*gap), b.getY(), true);
+                            boolean d = checkifPresentinList((b.getX()+gap)%(3*gap), b.getY(), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((b.getX()+gap)%(3*gap), b.getY(), index);
+                                return index;
+                            }
+                        }
+                        if((b.getX()-a.getX())==(2*gap)){
+                            boolean c = checkifPresentinList((b.getX()+(2*gap))%(3*gap), b.getY(), true);
+                            boolean d = checkifPresentinList((b.getX()+(2*gap))%(3*gap), b.getY(), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((b.getX()+(2*gap))%(3*gap), b.getY(), index);
+                                return index;
+                            }
+                        }
+                    }
+                    else if(a.getX()>b.getX()){//a right of b
+                        if((a.getX()-b.getX())==gap){
+                            boolean c = checkifPresentinList((a.getX()+gap)%(3*gap), a.getY(), true);
+                            boolean d = checkifPresentinList((a.getX()+gap)%(3*gap), a.getY(), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((a.getX()+gap)%(3*gap), a.getY(), index);
+                                return index;
+                            }
+                        }
+                        if((a.getX()-b.getX())==(2*gap)){
+                            boolean c = checkifPresentinList((a.getX()+(2*gap))%(3*gap), a.getY(), true);
+                            boolean d = checkifPresentinList((a.getX()+(2*gap))%(3*gap), a.getY(), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((a.getX()+(2*gap))%(3*gap), a.getY(), index);
+                                return index;
+                            }
+                        }
+                    }
+
+                }
+
+                else if ( (a.getX()==a.getY()) && (b.getX()==b.getY()) ){ // principal diagonal
+                    if(a.getX()<b.getX()){  // a left of b
+                        if((b.getX()-a.getX())==gap){
+                            boolean c = checkifPresentinList((b.getX()+gap)%(3*gap), (b.getY()+gap)%(3*gap), true);
+                            boolean d = checkifPresentinList((b.getX()+gap)%(3*gap), (b.getY()+gap)%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((b.getX()+gap)%(3*gap), (b.getY()+gap)%(3*gap), index);
+                                return index;
+                            }
+                        }
+                        if((b.getX()-a.getX())==(2*gap)){
+                            boolean c = checkifPresentinList((b.getX()+(2*gap))%(3*gap), (b.getY()+(2*gap))%(3*gap), true);
+                            boolean d = checkifPresentinList((b.getX()+(2*gap))%(3*gap), (b.getY()+(2*gap))%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((b.getX()+(2*gap))%(3*gap), (b.getY()+(2*gap))%(3*gap), index);
+                                return index;
+                            }
+                        }
+                    }
+                    else{  // a right of b
+                        if((a.getX()-b.getX())==gap){
+                            boolean c = checkifPresentinList((a.getX()+gap)%(3*gap), (a.getY()+gap)%(3*gap), true);
+                            boolean d = checkifPresentinList((a.getX()+gap)%(3*gap), (a.getY()+gap)%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((a.getX()+gap)%(3*gap), (a.getY()+gap)%(3*gap), index);
+                                return index;
+                            }
+                        }
+                        if((a.getX()-b.getX())==(2*gap)){
+                            boolean c = checkifPresentinList((a.getX()+(2*gap))%(3*gap), (a.getY()+(2*gap))%(3*gap), true);
+                            boolean d = checkifPresentinList((a.getX()+(2*gap))%(3*gap), (a.getY()+(2*gap))%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((a.getX()+(2*gap))%(3*gap), (a.getY()+(2*gap))%(3*gap), index);
+                                return index;
+                            }
+                        }
+                    }
+                }
+
+                else if( (((3*gap)-a.getX())==a.getY()) || (((3*gap)-b.getX())==b.getY()) ){ // other diagonal
+
+                    if(a.getY()<b.getY()){//a above b
+                        if((b.getY()-a.getY())==gap){
+                            boolean c = checkifPresentinList((b.getX()+(2*gap))%(3*gap), (b.getY()+gap)%(3*gap), true);
+                            boolean d = checkifPresentinList((b.getX()+(2*gap))%(3*gap), (b.getY()+gap)%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((b.getX()+(2*gap))%(3*gap), (b.getY()+gap)%(3*gap), index);
+                                return index;
+                            }
+                        }
+                        if((b.getY()-a.getY())==(2*gap)){
+                            boolean c = checkifPresentinList((b.getX()+gap)%(3*gap), (b.getY()+(2*gap))%(3*gap), true);
+                            boolean d = checkifPresentinList((b.getX()+gap)%(3*gap), (b.getY()+(2*gap))%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((b.getX()+gap)%(3*gap), (b.getY()+(2*gap))%(3*gap), index);
+                                return index;
+                            }
+                        }
+                    }
+                    else if(a.getY()>b.getY()){//a below b
+                        if((a.getY()-b.getY())==gap){
+                            boolean c = checkifPresentinList((a.getX()+(2*gap))%(3*gap), (a.getY()+gap)%(3*gap), true);
+                            boolean d = checkifPresentinList((a.getX()+(2*gap))%(3*gap), (a.getY()+gap)%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((a.getX()+(2*gap))%(3*gap), (a.getY()+gap)%(3*gap), index);
+                                return index;
+                            }
+                        }
+                        if((a.getY()-b.getY())==(2*gap)){
+                            boolean c = checkifPresentinList((a.getX()+gap)%(3*gap), (a.getY()+(2*gap))%(3*gap), true);
+                            boolean d = checkifPresentinList((a.getX()+gap)%(3*gap), (a.getY()+(2*gap))%(3*gap), false);
+                            if(!d&&!c){
+                                index = indexFromAvailableOptions((a.getX()+gap)%(3*gap), (a.getY()+(2*gap))%(3*gap), index);
+                                return index;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int ComputerCanScore(int index) {
+        if(boxElementsList.size()>3){
+            if((boxElementsList.get(boxElementsList.size()-2).firstPlayerTurn)){
+                index = possibilityOfWinningPresent(index, boxElementsList.get(boxElementsList.size()-2).firstPlayerTurn);
+                if(index!=-1) {
+                    return index;
+                }
+            }
+        }
+        if(boxElementsList.size()>4){
+            if((!boxElementsList.get(boxElementsList.size()-2).firstPlayerTurn)){
+                index = possibilityOfWinningPresent(index, boxElementsList.get(boxElementsList.size()-2).firstPlayerTurn);
+                if(index!=-1) {
+                    return index;
+                }
+            }
+        }
+        return -1;
     }
 
     private void removeFromAvailableOptions(float x, float y) {
