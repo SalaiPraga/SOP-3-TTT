@@ -11,7 +11,14 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -24,6 +31,12 @@ public class MyDrawView extends View {
     float gap ;
     float canvasSize;
     Paint marginPaint ;
+    public static int win = 0;
+    public static int loss = 0;
+    public static int draw = 0;
+    private FirebaseDatabase mFirebaseDatabase = FirebaseDatabase.getInstance();
+    public DatabaseReference mDatabaseReference = mFirebaseDatabase.getReference().child("Leader Board");
+
     public static ArrayList<BoxElement> boxElementsList = new ArrayList<BoxElement>() ;
     public static ArrayList<BoxElement> availableOptions = new ArrayList<BoxElement>() ;
     public static boolean singlePlayerMode = true;
@@ -72,7 +85,6 @@ public class MyDrawView extends View {
     }
 
     private void init(@Nullable AttributeSet set) {
-
 
         marginPaint = new Paint();
         marginPaint.setColor(getResources().getColor(R.color.margin));
@@ -265,10 +277,23 @@ public class MyDrawView extends View {
             msg = txtView.getText().toString();
         }
         else{
+            if(singlePlayerMode){
+                draw++;
+                mDatabaseReference.child(MainActivity.emailId).setValue(new PlayerStatictics(MainActivity.mUsername, win, loss, draw));
+            }
             Toast.makeText(getContext(), "Match Draw", Toast.LENGTH_SHORT).show();
             clearScreenTimer.start();
             clearScreenTimerRunning = true;
             return;
+        }
+        if(singlePlayerMode) {
+            if (msg != "Computer") {
+                win++;
+            }
+            else{
+                loss++;
+            }
+            mDatabaseReference.child(MainActivity.emailId).setValue(new PlayerStatictics(MainActivity.mUsername, win, loss, draw));
         }
         Toast.makeText(getContext(), msg+" Wins!", Toast.LENGTH_SHORT).show();
         clearScreenTimer.start();
@@ -523,7 +548,7 @@ public class MyDrawView extends View {
                     }
                 }
 
-                else if( (((3*gap)-a.getX())==a.getY()) || (((3*gap)-b.getX())==b.getY()) ){ // other diagonal
+                else if( (((3*gap)-a.getX())==a.getY()) && (((3*gap)-b.getX())==b.getY()) ){ // other diagonal
 
                     if(a.getY()<b.getY()){//a above b
                         if((b.getY()-a.getY())==gap){

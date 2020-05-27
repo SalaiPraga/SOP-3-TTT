@@ -1,5 +1,6 @@
 package com.example.tictactoe
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import com.google.android.material.snackbar.Snackbar
@@ -9,8 +10,10 @@ import android.view.MenuItem
 import android.widget.TextView
 import android.widget.TextView.BufferType
 import android.widget.Toast
+import com.example.tictactoe.MyDrawView.*
 import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.*
 
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
@@ -23,9 +26,14 @@ const val ANONYMOUS = "anonymous"
 
          private lateinit var mFirebaseAuth : FirebaseAuth
          private lateinit var mAuthStateListener : FirebaseAuth.AuthStateListener
-         lateinit var mUsername : String
-
-
+         private lateinit var mFirebaseDatabase : FirebaseDatabase
+         private lateinit var mDatabaseReference : DatabaseReference
+         companion object {
+             @JvmStatic
+             lateinit var mUsername: String
+             @JvmStatic
+             lateinit var emailId: String
+         }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +42,10 @@ const val ANONYMOUS = "anonymous"
         setSupportActionBar(toolbar)
 
         mFirebaseAuth = FirebaseAuth.getInstance()
+        mFirebaseDatabase = FirebaseDatabase.getInstance()
+        mDatabaseReference = mFirebaseDatabase.reference.child("Leader Board")
         mUsername = ANONYMOUS
+        emailId = ANONYMOUS
 
         openDialog()
 
@@ -59,7 +70,7 @@ const val ANONYMOUS = "anonymous"
             if (user != null) {
                 //signed in
                 // Toast.makeText(MainActivity.this, "You are now Signed In, Welcome !", Toast.LENGTH_SHORT).show();
-                onSignedInInitialize(user.displayName)
+                onSignedInInitialize(user.displayName, user.email)
             } else {
                 //signed out
                 onSignedOutCleanUp()
@@ -154,6 +165,11 @@ const val ANONYMOUS = "anonymous"
                 return true
             }
 
+            R.id.leaderBoard -> {
+                startActivity(Intent(this,LeaderBoardActivity::class.java))
+                return true
+            }
+
             R.id.changeNames -> {
                 MyDrawView.boxElementsList.clear()
                 openDialog()
@@ -165,9 +181,34 @@ const val ANONYMOUS = "anonymous"
     }
 
 
-    private fun onSignedInInitialize(displayName: String?) {
+    private fun onSignedInInitialize(displayName: String?, email: String?) {
         if (displayName != null) {
             mUsername = displayName
+            if (email != null) {
+                emailId = email
+                emailId = emailId.substring(0, emailId.length - 4)
+                mDatabaseReference.child(emailId)
+                mDatabaseReference.child(emailId).addValueEventListener(object :
+                    ValueEventListener {
+                    override fun onDataChange(dataSnapshot: DataSnapshot) {
+                        if (dataSnapshot.child("winCount").value != null) {
+                            win = Integer.valueOf(dataSnapshot.child("winCount").value!!.toString())
+                        }
+                        if (dataSnapshot.child("lossCount").value != null) {
+                            loss =
+                                Integer.valueOf(dataSnapshot.child("lossCount").value!!.toString())
+                        }
+                        if (dataSnapshot.child("drawCount").value != null) {
+                            draw =
+                                Integer.valueOf(dataSnapshot.child("drawCount").value!!.toString())
+                        }
+                    }
+
+                    override fun onCancelled(databaseError: DatabaseError) {
+
+                    }
+                })
+            }
         }
     }
 
