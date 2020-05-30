@@ -1,12 +1,15 @@
 package com.example.tictactoe
 
+import android.app.Activity
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.text.Editable
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.TextView
 import android.widget.TextView.BufferType
 import android.widget.Toast
@@ -22,6 +25,7 @@ import kotlinx.android.synthetic.main.player_names.*
 const val RC_SIGN_IN = 1
 const val ANONYMOUS = "anonymous"
 
+
      class MainActivity : AppCompatActivity(), PlayerNameDialog.mDialogListener {
 
          private lateinit var mFirebaseAuth : FirebaseAuth
@@ -33,7 +37,14 @@ const val ANONYMOUS = "anonymous"
              lateinit var mUsername: String
              @JvmStatic
              lateinit var emailId: String
+             @JvmStatic
+             lateinit var win1Sound : MediaPlayer
+             @JvmStatic
+             lateinit var win2Sound : MediaPlayer
+             @JvmStatic
+             lateinit var drawMatchSound : MediaPlayer
          }
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,41 +103,50 @@ const val ANONYMOUS = "anonymous"
     }
 
 
-
-
+         override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+             super.onActivityResult(requestCode, resultCode, data)
+             if(requestCode== RC_SIGN_IN){
+                 if(resultCode == Activity.RESULT_CANCELED){
+                     finish()
+                 }
+             }
+         }
 
          override fun applytexts(nameA: String?, nameB: String?) {
              if(nameA!="") {
                  playerA.text = nameA
+                 playerName1 = nameA.toString()
              }
              else{
                  playerA.text = "Player A"
+                 playerName1 = "Player A"
              }
-             if(!MyDrawView.singlePlayerMode) {
-                 if (nameB != "") {
-                     playerB.text = nameB
-                 } else {
-                     playerB.text = "Player B"
-                 }
+
+             if (nameB != "") {
+                 playerB.text = nameB
+                 playerName2 = nameB.toString()
+             } else {
+                 playerB.text = "Player B"
+                 playerName2 = "Player B"
              }
-             else{
-                 playerB.text = "Computer"
-             }
+
+             MyDrawView.boxElementsList.clear()
          }
 
 
          private fun openDialog() {
 
-             var playerNameDialog = PlayerNameDialog()
-             playerNameDialog.show(supportFragmentManager, "Player Names")
-//             if(MyDrawView.singlePlayerMode){
-////                 playerBName.setText("Computer")
-////
-////             }
-////             else{
-////                 playerBName.setText("Player B")
-////             }
-
+             if(MyDrawView.singlePlayerMode){
+                 playerA.text = mUsername
+                 playerName1 = mUsername
+                 playerB.text = "Computer"
+                 playerName2 = "Computer"
+                 MyDrawView.boxElementsList.clear()
+             }
+             else {
+                 var playerNameDialog = PlayerNameDialog()
+                 playerNameDialog.show(supportFragmentManager, "Player Names")
+             }
          }
 
 
@@ -170,11 +190,11 @@ const val ANONYMOUS = "anonymous"
                 return true
             }
 
-            R.id.changeNames -> {
-                MyDrawView.boxElementsList.clear()
-                openDialog()
-                return true
-            }
+//            R.id.changeNames -> {
+//                MyDrawView.boxElementsList.clear()
+//                openDialog()
+//                return true
+//            }
 
             else -> super.onOptionsItemSelected(item)
         }
@@ -227,6 +247,26 @@ const val ANONYMOUS = "anonymous"
      override fun onPause() {
          super.onPause()
          mFirebaseAuth.removeAuthStateListener(mAuthStateListener)
+         if(win1Sound.isPlaying()){
+             win1Sound.stop()
+             win1Sound.prepare()
+         }
+         if(win2Sound.isPlaying()){
+             win2Sound.stop()
+             win2Sound.prepare()
+         }
+         if(drawMatchSound.isPlaying()){
+             drawMatchSound.stop()
+             drawMatchSound.prepare()
+         }
+
      }
 
-}
+         override fun onDestroy() {
+
+             if(win1Sound.isPlaying()) win1Sound.stop(); win1Sound.release()
+             if(win2Sound.isPlaying()) win2Sound.stop(); win2Sound.release()
+             if(drawMatchSound.isPlaying()) drawMatchSound.stop(); drawMatchSound.release()
+             super.onDestroy()
+         }
+     }

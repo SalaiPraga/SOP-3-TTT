@@ -4,7 +4,10 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.CountDownTimer;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -34,12 +37,14 @@ public class MyDrawView extends View {
     public static int win = 0;
     public static int loss = 0;
     public static int draw = 0;
+    public static String playerName1 = "Player A";
+    public static String playerName2 = "Player B";
     private FirebaseDatabase mFirebaseDatabase = FirebaseDatabase.getInstance();
     public DatabaseReference mDatabaseReference = mFirebaseDatabase.getReference().child("Leader Board");
 
     public static ArrayList<BoxElement> boxElementsList = new ArrayList<BoxElement>() ;
     public static ArrayList<BoxElement> availableOptions = new ArrayList<BoxElement>() ;
-    public static boolean singlePlayerMode = true;
+    public static boolean singlePlayerMode = false;
     boolean computerFirstTurn = false;
     MediaPlayer clickSound = MediaPlayer.create(getContext(), R.raw.burst);
     boolean clearScreenTimerRunning = false;
@@ -92,7 +97,9 @@ public class MyDrawView extends View {
         marginPaint.setStyle(Paint.Style.STROKE);
         marginPaint.setStrokeWidth(30);
 
-
+        MainActivity.win1Sound = MediaPlayer.create(getContext(), R.raw.win1);
+        MainActivity.win2Sound = MediaPlayer.create(getContext(), R.raw.win2);
+        MainActivity.drawMatchSound = MediaPlayer.create(getContext(), R.raw.drawsound);
     }
 
 
@@ -279,9 +286,16 @@ public class MyDrawView extends View {
         else{
             if(singlePlayerMode){
                 draw++;
-                mDatabaseReference.child(MainActivity.emailId).setValue(new PlayerStatictics(MainActivity.mUsername, win, loss, draw));
+                float score = (100F * ((Float.valueOf(win) - Float.valueOf(loss)) / ((Float.valueOf(win) + Float.valueOf(loss) + Float.valueOf(draw)))));
+                if(score<0){
+                    score=0;
+                }
+                mDatabaseReference.child(MainActivity.emailId).setValue(new PlayerStatictics(MainActivity.mUsername, win, loss, draw, score));
+                mDatabaseReference.child(MainActivity.emailId).child("negative").setValue(-score);
             }
             Toast.makeText(getContext(), "Match Draw", Toast.LENGTH_SHORT).show();
+            vibrate();
+            MainActivity.drawMatchSound.start();
             clearScreenTimer.start();
             clearScreenTimerRunning = true;
             return;
@@ -293,9 +307,20 @@ public class MyDrawView extends View {
             else{
                 loss++;
             }
-            mDatabaseReference.child(MainActivity.emailId).setValue(new PlayerStatictics(MainActivity.mUsername, win, loss, draw));
+            float score = (100F * ((Float.valueOf(win) - Float.valueOf(loss)) / ((Float.valueOf(win) + Float.valueOf(loss) + Float.valueOf(draw)))));
+            if(score<0){
+                score=0;
+            }
+            mDatabaseReference.child(MainActivity.emailId).setValue(new PlayerStatictics(MainActivity.mUsername, win, loss, draw, score));
+            mDatabaseReference.child(MainActivity.emailId).child("negative").setValue(-score);
         }
         Toast.makeText(getContext(), msg+" Wins!", Toast.LENGTH_SHORT).show();
+        vibrate();
+        if(msg==playerName1){
+            MainActivity.win1Sound.start();
+        }else if(msg==playerName2){
+            MainActivity.win2Sound.start();
+        }
         clearScreenTimer.start();
         clearScreenTimerRunning = true;
     }
@@ -398,6 +423,102 @@ public class MyDrawView extends View {
                 case 3: return 8;
             }
         }
+
+        if(boxElementsList.size()==1){
+            if ( (boxElementsList.get(0).getX()==(1.5F*gap))&&(boxElementsList.get(0).getY()==(1.5F*gap)) ) {
+                Random random = new Random();
+                int corner = random.nextInt(4);
+                switch (corner){
+                    case 0: return 0;
+                    case 1: return 2;
+                    case 2: return 5;
+                    case 3: return 7;
+                }
+            }
+            index = indexFromAvailableOptions((1.5F*gap), (1.5F*gap), index);
+            return index;
+        }
+
+        if(boxElementsList.size()==2){
+            float x3 = boxElementsList.get(0).getX();
+            float x4 = boxElementsList.get(1).getX();
+            float y3 = boxElementsList.get(0).getY();
+            float y4 = boxElementsList.get(1).getY();
+            //if opponent plays edge , comp must play corner
+            if( (boxElementsList.get(1).getX()==(1.5*gap))&&!(boxElementsList.get(1).getY()==(1.5*gap)) ||
+                    !(boxElementsList.get(1).getX()==(1.5*gap))&&(boxElementsList.get(1).getY()==(1.5*gap)) ){
+
+                float n1 = (x3==(0.5*gap))? (x3 + (2 * gap)) % (3 * gap) : (x3 + (1 * gap)) % (3 * gap);
+                float n2 = (y3==(0.5*gap))? (y3 + (2 * gap)) % (3 * gap) : (y3 + (1 * gap)) % (3 * gap);
+                Random random = new Random();
+                int corner = random.nextInt(2);
+                if( (corner==0) ) {
+                    index = indexFromAvailableOptions(n1, y3, index);
+                    if((x3-x4==gap)||(x4-x3==gap)){
+                        index = indexFromAvailableOptions(x3, n2 , index);
+                    }
+                }else {
+                    index = indexFromAvailableOptions(x3, n2 , index);
+                    if(((y3-y4==gap)||(y4-y3==gap))){
+                        index = indexFromAvailableOptions(n1, y3, index);
+                    }
+                }
+                return index;
+            }
+            //if opponent plays corner
+            if( ((x4==(0.5*gap))&&(y4==(0.5*gap))) || ((x4==(2.5*gap))&&(y4==(2.5*gap)))
+                    || ((x4==(0.5*gap))&&(y4==(2.5*gap))) || ((x4==(2.5*gap))&&(y4==(0.5*gap)))){
+                float n1 = (x3==(0.5*gap))? (x3 + (2 * gap)) % (3 * gap) : (x3 + (1 * gap)) % (3 * gap);
+                float n2 = (y3==(0.5*gap))? (y3 + (2 * gap)) % (3 * gap) : (y3 + (1 * gap)) % (3 * gap);
+                if( (x3==x4) || (y3==y4) ){ // adjacent corner
+                    index = indexFromAvailableOptions(n1, n2 , index);
+                }
+                else {
+                    Random random = new Random();
+                    int corner = random.nextInt(2);
+                    if( (corner==0) ) {
+                        index = indexFromAvailableOptions(n1, y3, index);
+                    }else {
+                        index = indexFromAvailableOptions(x3, n2 , index);
+                    }
+                }
+                return index;
+            }
+
+            // if opponent plays centre
+            if( (x4==(1.5F*gap))&&(y4==(1.5F*gap)) ){
+                float n1 = (x3==(0.5*gap))? (x3 + (2 * gap)) % (3 * gap) : (x3 + (1 * gap)) % (3 * gap);
+                float n2 = (y3==(0.5*gap))? (y3 + (2 * gap)) % (3 * gap) : (y3 + (1 * gap)) % (3 * gap);
+                index = indexFromAvailableOptions(n1, n2 , index);
+                return index;
+            }
+
+        }
+
+        if(boxElementsList.size()==4){
+            index = indexFromAvailableOptions((1.5F*gap), (1.5F*gap), index);
+            if(index!=-1){
+                int c1 = indexFromAvailableOptions((0.5F*gap), (0.5F*gap), -1);
+                int c2 = indexFromAvailableOptions((2.5F*gap), (2.5F*gap), -1);
+                int c3 = indexFromAvailableOptions((2.5F*gap), (0.5F*gap), -1);
+                int c4 = indexFromAvailableOptions((0.5F*gap), (2.5F*gap), -1);
+                //check if only one corner is empty
+                if((c1!=-1)&&((c2+c3+c4)==-3)){
+                    return c1;
+                }
+                else if((c2!=-1)&&((c1+c3+c4)==-3)){
+                    return c2;
+                }
+                else if((c3!=-1)&&((c2+c1+c4)==-3)){
+                    return c3;
+                }
+                else if((c4!=-1)&&((c2+c3+c1)==-3)){
+                    return c4;
+                }
+            }
+            return index;
+        }
+
         return -1;
     }
 
@@ -619,4 +740,15 @@ public class MyDrawView extends View {
             }
         }
     }
+
+    public void vibrate(){
+        Vibrator v = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            v.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE));
+        }else {
+            v.vibrate(200);
+        }
+    }
+
+
 }

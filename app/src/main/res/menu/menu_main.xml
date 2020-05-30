@@ -12,11 +12,11 @@
         android:orderInCategory="100"
         android:title="Toggle Mode"
         app:showAsAction="never" />
-    <item
-        android:id="@+id/changeNames"
-        android:orderInCategory="100"
-        android:title="Change Names"
-        app:showAsAction="never" />
+<!--    <item-->
+<!--        android:id="@+id/changeNames"-->
+<!--        android:orderInCategory="100"-->
+<!--        android:title="Change Names"-->
+<!--        app:showAsAction="never" />-->
     <item
         android:id="@+id/leaderBoard"
         android:orderInCategory="100"

@@ -10,7 +10,7 @@
 
     <LinearLayout
         android:id="@+id/linearLayout"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginTop="32dp"
@@ -22,8 +22,9 @@
 
         <TextView
             android:id="@+id/playerA"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:layout_weight="1"
             android:gravity="center"
             android:text="Player A"
@@ -31,11 +32,12 @@
 
         <TextView
             android:id="@+id/playerB"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Player A"
+            android:text="Player B"
             android:textAppearance="@style/TextAppearance.AppCompat.Large" />
 
     </LinearLayout>
@@ -58,7 +60,8 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="X"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display3" />
+            android:textAppearance="@style/TextAppearance.AppCompat.Display3"
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -66,7 +69,8 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="O"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display3" />
+            android:textAppearance="@style/TextAppearance.AppCompat.Display3"
+            android:textStyle="bold" />
 
     </LinearLayout>
 

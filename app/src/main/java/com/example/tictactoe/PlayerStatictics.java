@@ -5,16 +5,26 @@ public class PlayerStatictics {
     private int winCount = 0;
     private int lossCount = 0;
     private int drawCount = 0;
+    private float tScore = 0;
 
     public PlayerStatictics(){
 
     }
 
-    public PlayerStatictics(String username, int winCount, int lossCount, int drawCount) {
+    public PlayerStatictics(String username, int winCount, int lossCount, int drawCount, float tScore) {
         this.username = username;
         this.winCount = winCount;
         this.lossCount = lossCount;
         this.drawCount = drawCount;
+        this.tScore = tScore;
+    }
+
+    public float gettScore() {
+        return tScore;
+    }
+
+    public void settScore(float tScore) {
+        this.tScore = tScore;
     }
 
     public void setUsername(String username) {

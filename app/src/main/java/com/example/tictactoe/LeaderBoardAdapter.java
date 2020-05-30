@@ -40,6 +40,16 @@ public class LeaderBoardAdapter extends RecyclerView.Adapter<LeaderBoardAdapter.
         holder.winTextView.setText(String.valueOf(playerList.get(position).getWinCount()));
         holder.lossTextView.setText(String.valueOf(playerList.get(position).getLossCount()));
         holder.drawTextView.setText(String.valueOf(playerList.get(position).getDrawCount()));
+        float a, b, c, d;
+        a = Float.valueOf(String.valueOf(playerList.get(position).getWinCount()));
+        b = Float.valueOf(String.valueOf(playerList.get(position).getLossCount()));
+        c = Float.valueOf(String.valueOf(playerList.get(position).getDrawCount()));
+        d = 100*((a-b)/(a+b+c));
+        d = d - (d%(0.01f));
+        if(d<0){
+            d=0;
+        }
+        holder.scoreTextView.setText(String.valueOf(d));
     }
 
     @Override
@@ -52,6 +62,7 @@ public class LeaderBoardAdapter extends RecyclerView.Adapter<LeaderBoardAdapter.
         TextView winTextView ;
         TextView lossTextView ;
         TextView drawTextView ;
+        TextView scoreTextView ;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -59,39 +70,7 @@ public class LeaderBoardAdapter extends RecyclerView.Adapter<LeaderBoardAdapter.
             winTextView = itemView.findViewById(R.id.winNumber);
             lossTextView = itemView.findViewById(R.id.lossNumber);
             drawTextView = itemView.findViewById(R.id.drawNumber);
+            scoreTextView = itemView.findViewById(R.id.tScore);
         }
     }
-
-
-
-
-
-
-
-
-
-//    public LeaderBoardAdapter(Context context, int resource, List<PlayerStatictics> objects) {
-//        super(context, resource, objects);
-//    }
-//
-//    @NonNull
-//    @Override
-//    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-//        if (convertView == null) {
-//            convertView = ((Activity) getContext()).getLayoutInflater().inflate(R.layout.item_player, parent, false);
-//        }
-//
-//        TextView usernameTextView = convertView.findViewById(R.id.playerUsername);
-//        TextView winTextView = convertView.findViewById(R.id.winNumber);
-//        TextView lossTextView = convertView.findViewById(R.id.lossNumber);
-//        TextView drawTextView = convertView.findViewById(R.id.drawNumber);
-//
-//        PlayerStatictics statictics = getItem(position);
-//        usernameTextView.setText(statictics.getUsername());
-//        winTextView.setText(statictics.getWinCount());
-//        lossTextView.setText(statictics.getLossCount());
-//        drawTextView.setText(statictics.getDrawCount());
-//
-//        return convertView;
-//    }
 }

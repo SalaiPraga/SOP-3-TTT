@@ -51,16 +51,9 @@ class LeaderBoardActivity : AppCompatActivity() {
 
             }
         }
-        mDatabaseReference!!.addChildEventListener(mChildEventListener)
+        mDatabaseReference.orderByChild("negative").addChildEventListener(mChildEventListener)
 
 
-//        players.add(PlayerStatictics("salai", 1, 2, 3))
-//        players.add(PlayerStatictics("helo", 1, 2, 3))
-//        players.add(PlayerStatictics("heya", 4,2, 5))
-//
-//        var mLeaderBoardAdapter = LeaderBoardAdapter(players, this)
-//        leaderBoardListView.adapter = mLeaderBoardAdapter
-//        leaderBoardListView.layoutManager = LinearLayoutManager(this)
 
     }
 
